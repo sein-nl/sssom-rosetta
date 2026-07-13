@@ -15,9 +15,10 @@ First pair of ontologies to map:
   `http://purl.org/ozo/onz-g`, published at
   https://kik-v-publicatieplatform.nl/ontologie/onz-g/2.8.1. TTL/OWL/JSON-LD
   downloads are linked from that page (`ontology.ttl`, `.owl`, `.jsonld`).
-- OMOP CDM OWL, IRI-namespaced ontology generated from the OMOP CDM v6 schema,
-  published at https://vemonet.github.io/omop-cdm-owl/, source and
-  `ontology.ttl` at https://github.com/vemonet/omop-cdm-owl.
+- OMOP CDM OWL, IRI-namespaced ontology generated from the OMOP CDM v5.4
+  schema, published at https://plugin-healthcare.github.io/omop-cdm-owl/,
+  source and `ontology.ttl` at
+  https://github.com/plugin-healthcare/omop-cdm-owl.
 
 Example mapping: `omop:Person skos:exactMatch onz-g:Client`.
 

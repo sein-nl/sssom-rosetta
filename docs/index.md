@@ -19,7 +19,7 @@ The first ontology pair covered is:
 - [ONZ-G 2.8.1](ontologies/onz-g.md) (Een Ontologie voor de Nederlandse
   Zorg — Generiek)
 - [OMOP CDM OWL](ontologies/omop-cdm.md), generated from the OMOP Common
-  Data Model v6 schema
+  Data Model v5.4 schema
 
 See [Mappings](mappings/omop-onz-g.md) for the mapping set between these two
 ontologies.

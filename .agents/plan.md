@@ -39,7 +39,8 @@ pair, `mapping diff` CLI polish.
 4. **ontology-sources-registry** — Implement `ontology/sources.py`: a
    registry of `{name, version, iri, download_url, checksum}` for ONZ-G 2.8.1
    (`ontology.ttl` from the KIK-V widoco download link) and OMOP CDM OWL
-   (`ontology.ttl` from vemonet/omop-cdm-owl). Depends on: scaffold-package.
+   (`ontology.ttl` from plugin-healthcare/omop-cdm-owl). Depends on:
+   scaffold-package.
 
 5. **ontology-loader** — Implement `ontology/loader.py`: download-and-cache
    into `data/ontologies/<name>/<version>/ontology.ttl` with checksum

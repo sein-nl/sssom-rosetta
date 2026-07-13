@@ -29,8 +29,8 @@ def test_registry_contains_omop_cdm() -> None:
     assert source.name == "omop-cdm"
     assert source.iri == "https://w3id.org/omop/ontology"
     assert source.download_url == (
-        "https://raw.githubusercontent.com/vemonet/omop-cdm-owl/"
-        "63d4c903c0d748d81459177f9b29fbea296b96fe/omop_cdm_v6.ttl"
+        "https://raw.githubusercontent.com/plugin-healthcare/omop-cdm-owl/"
+        "99d42596d675f0905724883fd35a81775f98bfe5/omop_cdm_v5.ttl"
     )
     assert source.checksum is None
 

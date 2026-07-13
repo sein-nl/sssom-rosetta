@@ -58,14 +58,14 @@ ONTOLOGY_SOURCES: dict[str, OntologySource] = {
     ),
     "omop-cdm": OntologySource(
         name="omop-cdm",
-        version="63d4c903c0d748d81459177f9b29fbea296b96fe",
+        version="5.4",
         iri="https://w3id.org/omop/ontology",
         # raw.githubusercontent.com pinned to a commit SHA (rather than the
-        # GitHub Pages mirror at vemonet.github.io/omop-cdm-owl/ontology.ttl)
+        # GitHub Pages mirror at plugin-healthcare.github.io/omop-cdm-owl/ontology.ttl)
         # so the download is immutable and reproducible even if `main` moves.
         download_url=(
-            "https://raw.githubusercontent.com/vemonet/omop-cdm-owl/"
-            "63d4c903c0d748d81459177f9b29fbea296b96fe/omop_cdm_v6.ttl"
+            "https://raw.githubusercontent.com/plugin-healthcare/omop-cdm-owl/"
+            "99d42596d675f0905724883fd35a81775f98bfe5/omop_cdm_v5.ttl"
         ),
     ),
 }

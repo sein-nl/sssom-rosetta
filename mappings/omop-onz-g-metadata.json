@@ -1,8 +1,8 @@
 {
   "@context": "http://www.w3.org/ns/csvw",
   "url": "omop-onz-g.csv",
-  "dc:title": "OMOP CDM v6 <-> ONZ-G 2.8.1 mappings",
-  "dc:description": "Hand-authored SSSOM mapping rows between the OMOP CDM v6 OWL ontology and the ONZ-G 2.8.1 ontology. This CSV, together with this metadata file, is the only source of truth; `rosetta mapping build` derives the canonical SSSOM/TSV and RDF/Turtle artifacts from it under build/mappings/.",
+  "dc:title": "OMOP CDM v5.4 <-> ONZ-G 2.8.1 mappings",
+  "dc:description": "Hand-authored SSSOM mapping rows between the OMOP CDM v5.4 OWL ontology and the ONZ-G 2.8.1 ontology. This CSV, together with this metadata file, is the only source of truth; `rosetta mapping build` derives the canonical SSSOM/TSV and RDF/Turtle artifacts from it under build/mappings/.",
   "tableSchema": {
     "columns": [
       {
