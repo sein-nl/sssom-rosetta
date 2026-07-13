@@ -26,7 +26,6 @@ without recomputing it.
 
 from __future__ import annotations
 
-import ast
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -48,11 +47,10 @@ def _is_list_field(annotation: Any) -> bool:  # noqa: ANN401 - inspects a pydant
 
 
 #: ``Mapping`` fields typed as ``list[str]`` (multivalued SSSOM slots, e.g.
-#: ``author_label``). ``sssom-py``'s TSV writer serializes these as a Python
-#: list literal string (e.g. ``"['a', 'b']"``, matching ``write_sssom_tsv``'s
-#: direct pass-through of the dumped ``Mapping`` field into a DataFrame
-#: cell); we need to parse that literal back into an actual list before
-#: constructing ``Mapping``, since a raw string fails schema validation.
+#: ``author_id``). ``write_sssom_tsv`` serializes these as a single
+#: ``|``-separated string per SSSOM/TSV convention; we split that string
+#: back into an actual list before constructing ``Mapping``, since a raw
+#: string fails schema validation.
 _LIST_FIELDS = frozenset(
     name
     for name, info in Mapping.model_fields.items()
@@ -119,20 +117,15 @@ def _is_nan(value: Any) -> bool:  # noqa: ANN401 - value comes from a pandas cel
 def _parse_list_cell(key: str, value: Any) -> Any:  # noqa: ANN401 - TSV cell values are heterogeneous
     """Parse a multivalued field's TSV cell back into a list, if needed.
 
-    ``write_sssom_tsv`` passes multivalued ``Mapping`` fields (e.g.
-    ``author_label``, typed ``list[str]``) straight into a DataFrame cell,
-    so ``sssom-py``'s TSV writer renders them as a Python list literal
-    string (e.g. ``"['sssom-rosetta contributors']"``). Round-tripping that
-    string straight into ``Mapping`` fails schema validation, so for known
-    list-typed fields we parse the literal back into an actual list.
+    ``write_sssom_tsv`` serializes multivalued ``Mapping`` fields (e.g.
+    ``author_id``, typed ``list[str]``) as a single ``|``-separated string
+    per SSSOM/TSV convention. Round-tripping that string straight into
+    ``Mapping`` fails schema validation, so for known list-typed fields we
+    split the string back into an actual list.
     """
     if key not in _LIST_FIELDS or not isinstance(value, str):
         return value
-    try:
-        parsed = ast.literal_eval(value)
-    except (ValueError, SyntaxError):
-        return value
-    return parsed if isinstance(parsed, list) else value
+    return value.split("|")
 
 
 @dataclass

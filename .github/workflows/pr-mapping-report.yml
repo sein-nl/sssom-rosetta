@@ -21,10 +21,10 @@ env:
   # should loop over the changed pairs instead of hardcoding these paths and
   # metadata values.
   MAPPING_CSV: mappings/omop-onz-g.csv
-  MAPPING_METADATA: mappings/omop-onz-g-metadata.json
+  MAPPING_METADATA: mappings/omop-onz-g.metadata.json
   MAPPING_SET_ID: "https://raw.githubusercontent.com/plugin-healthcare/sssom-rosetta/main/build/mappings/omop-onz-g.sssom.tsv"
   MAPPING_LICENSE: "https://creativecommons.org/publicdomain/zero/1.0/"
-  CURIE_MAP: '{"omop": "https://w3id.org/omop/ontology/", "onz-g": "http://purl.org/ozo/onz-g#", "skos": "http://www.w3.org/2004/02/skos/core#", "semapv": "https://w3id.org/semapv/vocab/"}'
+  CURIE_MAP: '{"omop": "https://w3id.org/omop/ontology/", "onz-g": "http://purl.org/ozo/onz-g#", "skos": "http://www.w3.org/2004/02/skos/core#", "semapv": "https://w3id.org/semapv/vocab/", "orcid": "https://orcid.org/"}'
 
 jobs:
   mapping-report:
@@ -69,7 +69,7 @@ jobs:
         run: |
           mkdir -p base-ref/mappings
           if git show "$BASE_SHA:$MAPPING_CSV" > base-ref/mappings/omop-onz-g.csv 2>/dev/null \
-             && git show "$BASE_SHA:$MAPPING_METADATA" > base-ref/mappings/omop-onz-g-metadata.json 2>/dev/null; then
+             && git show "$BASE_SHA:$MAPPING_METADATA" > base-ref/mappings/omop-onz-g.metadata.json 2>/dev/null; then
             echo "base_exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "base_exists=false" >> "$GITHUB_OUTPUT"
@@ -80,7 +80,7 @@ jobs:
       - name: Build base mapping set
         if: steps.extract-base.outputs.base_exists == 'true'
         run: |
-          uv run rosetta mapping build base-ref/mappings/omop-onz-g.csv base-ref/mappings/omop-onz-g-metadata.json \
+          uv run rosetta mapping build base-ref/mappings/omop-onz-g.csv base-ref/mappings/omop-onz-g.metadata.json \
             --mapping-set-id "$MAPPING_SET_ID" \
             --license "$MAPPING_LICENSE" \
             --curie-map "$CURIE_MAP" \

@@ -138,8 +138,18 @@ def write_sssom_tsv(mapping_set: MappingSet, output_path: Path) -> None:
 
 
 def _mapping_row(mapping_dict: dict[str, Any]) -> dict[str, Any]:
-    """Drop ``None``-valued fields from a dumped ``Mapping`` for a tidy TSV row."""
-    return {key: value for key, value in mapping_dict.items() if value is not None}
+    """Drop ``None``-valued fields from a dumped ``Mapping`` for a tidy TSV row.
+
+    Multivalued ``Mapping`` fields (e.g. ``author_id``) are Python lists once
+    dumped; SSSOM/TSV represents these as a single ``|``-separated string per
+    cell (see ``sssom-schema``'s ``multivalued`` slots), not a raw list, so
+    each list value is joined here before it reaches the TSV writer.
+    """
+    return {
+        key: "|".join(value) if isinstance(value, list) else value
+        for key, value in mapping_dict.items()
+        if value is not None
+    }
 
 
 def write_ttl(

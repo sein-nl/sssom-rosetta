@@ -24,10 +24,10 @@ env:
   # multi-mapping-set increment should loop over mappings/*.csv instead of
   # hardcoding this one pair.
   MAPPING_CSV: mappings/omop-onz-g.csv
-  MAPPING_METADATA: mappings/omop-onz-g-metadata.json
+  MAPPING_METADATA: mappings/omop-onz-g.metadata.json
   MAPPING_SET_ID: "https://raw.githubusercontent.com/plugin-healthcare/sssom-rosetta/main/build/mappings/omop-onz-g.sssom.tsv"
   MAPPING_LICENSE: "https://creativecommons.org/publicdomain/zero/1.0/"
-  CURIE_MAP: '{"omop": "https://w3id.org/omop/ontology/", "onz-g": "http://purl.org/ozo/onz-g#", "skos": "http://www.w3.org/2004/02/skos/core#", "semapv": "https://w3id.org/semapv/vocab/"}'
+  CURIE_MAP: '{"omop": "https://w3id.org/omop/ontology/", "onz-g": "http://purl.org/ozo/onz-g#", "skos": "http://www.w3.org/2004/02/skos/core#", "semapv": "https://w3id.org/semapv/vocab/", "orcid": "https://orcid.org/"}'
 
 jobs:
   build:

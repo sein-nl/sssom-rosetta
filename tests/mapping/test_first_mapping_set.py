@@ -26,13 +26,14 @@ PREFIX_MAP = {
     "onz-g": "http://purl.org/ozo/onz-g#",
     "skos": "http://www.w3.org/2004/02/skos/core#",
     "semapv": "https://w3id.org/semapv/vocab/",
+    "orcid": "https://orcid.org/",
 }
 
 
 def _load() -> MappingSet:
     return read_mapping_set_csvw(
         MAPPINGS_DIR / "omop-onz-g.csv",
-        MAPPINGS_DIR / "omop-onz-g-metadata.json",
+        MAPPINGS_DIR / "omop-onz-g.metadata.json",
         mapping_set_id=MAPPING_SET_ID,
         license=LICENSE,
         curie_map=PREFIX_MAP,
@@ -42,7 +43,7 @@ def _load() -> MappingSet:
 def test_omop_onz_g_mapping_set_parses() -> None:
     mapping_set = _load()
     assert mapping_set.mappings is not None
-    assert len(mapping_set.mappings) == 1
+    assert len(mapping_set.mappings) == 8
 
 
 def test_omop_onz_g_mapping_set_first_row_is_person_to_patient_in_care() -> None:
@@ -54,4 +55,5 @@ def test_omop_onz_g_mapping_set_first_row_is_person_to_patient_in_care() -> None
     assert mapping.object_id == "onz-g:PatientInCare"
     assert mapping.mapping_justification == "semapv:ManualMappingCuration"
     assert mapping.confidence == 0.9
+    assert mapping.author_id == ["orcid:0000-0001-8979-9194"]
     assert mapping.author_label == ["sssom-rosetta contributors"]

@@ -6,7 +6,7 @@ Mapping set: `https://raw.githubusercontent.com/plugin-healthcare/sssom-rosetta/
 
 ## Summary
 
-- Added: 1
+- Added: 8
 - Removed: 0
 - Changed: 0
 - Unchanged: 0
@@ -15,13 +15,23 @@ Mapping set: `https://raw.githubusercontent.com/plugin-healthcare/sssom-rosetta/
 
 | Predicate | Count |
 | --- | --- |
+| skos:broadMatch | 5 |
 | skos:exactMatch | 1 |
+| skos:narrowMatch | 1 |
+| skos:relatedMatch | 1 |
 
 ## Added
 
 | Subject | Predicate | Object | Justification | Confidence |
 | --- | --- | --- | --- | --- |
+| omop:CareSite | skos:narrowMatch | onz-g:CareOrganization | semapv:ManualMappingCuration | 0.8 |
+| omop:Death | skos:relatedMatch | onz-g:Dead | semapv:ManualMappingCuration | 0.75 |
+| omop:Location | skos:broadMatch | onz-g:Address | semapv:ManualMappingCuration | 0.8 |
+| omop:Measurement | skos:broadMatch | onz-g:AssessingEvent | semapv:ManualMappingCuration | 0.75 |
+| omop:PayerPlanPeriod | skos:broadMatch | onz-g:InsurancePolicy | semapv:ManualMappingCuration | 0.75 |
 | omop:Person | skos:exactMatch | onz-g:PatientInCare | semapv:ManualMappingCuration | 0.9 |
+| omop:Provider | skos:broadMatch | onz-g:Caregiver | semapv:ManualMappingCuration | 0.85 |
+| omop:Vocabulary | skos:broadMatch | onz-g:ClassificationSystem | semapv:ManualMappingCuration | 0.8 |
 
 ## Removed
 

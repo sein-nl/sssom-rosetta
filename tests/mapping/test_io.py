@@ -56,7 +56,7 @@ METADATA_CONTENT = {
 def csvw_pair(tmp_path: Path) -> tuple[Path, Path]:
     """Write the fixture CSV + CSVW metadata JSON pair to ``tmp_path``."""
     csv_path = tmp_path / "omop-onz-g.csv"
-    metadata_path = tmp_path / "omop-onz-g-metadata.json"
+    metadata_path = tmp_path / "omop-onz-g.metadata.json"
     csv_path.write_text(CSV_CONTENT)
     metadata_path.write_text(json.dumps(METADATA_CONTENT))
     return csv_path, metadata_path
@@ -194,6 +194,7 @@ def test_write_sssom_tsv_contains_yaml_header_and_rows(
     )
     assert "omop:Person" in body_lines[1]
     assert "onz-g:Client" in body_lines[1]
+    assert "orcid:0000-0000-0000-0001|orcid:0000-0000-0000-0002" in body_lines[1]
 
 
 def test_write_ttl_creates_expected_triples(

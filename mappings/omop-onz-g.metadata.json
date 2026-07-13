@@ -44,11 +44,27 @@
         "propertyUrl": "https://w3id.org/sssom/confidence"
       },
       {
+        "name": "author_id",
+        "titles": "author_id",
+        "datatype": "string",
+        "separator": "|",
+        "valueUrl": "{+author_id}",
+        "propertyUrl": "https://w3id.org/sssom/author_id"
+      },
+      {
         "name": "author_label",
         "titles": "author_label",
         "datatype": "string",
         "separator": "|",
         "propertyUrl": "https://w3id.org/sssom/author_label"
+      },
+      {
+        "name": "reviewer_id",
+        "titles": "reviewer_id",
+        "datatype": "string",
+        "separator": "|",
+        "valueUrl": "{+reviewer_id}",
+        "propertyUrl": "https://w3id.org/sssom/reviewer_id"
       },
       {
         "name": "subject_label",

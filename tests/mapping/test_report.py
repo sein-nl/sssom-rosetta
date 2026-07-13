@@ -75,6 +75,26 @@ def test_load_mapping_set_tsv_round_trips_written_tsv(tmp_path: Path) -> None:
     assert loaded_mapping.confidence == 0.9
 
 
+def test_load_mapping_set_tsv_round_trips_multivalued_author_id(
+    tmp_path: Path,
+) -> None:
+    mapping_set = _mapping_set(
+        _mapping(
+            author_id=["orcid:0000-0000-0000-0001", "orcid:0000-0000-0000-0002"]
+        )
+    )
+    tsv_path = tmp_path / "multi-author.sssom.tsv"
+    write_sssom_tsv(mapping_set, tsv_path)
+
+    loaded = load_mapping_set_tsv(tsv_path)
+
+    loaded_mapping = (loaded.mappings or [])[0]
+    assert loaded_mapping.author_id == [
+        "orcid:0000-0000-0000-0001",
+        "orcid:0000-0000-0000-0002",
+    ]
+
+
 def test_load_mapping_set_tsv_drops_missing_optional_fields(tmp_path: Path) -> None:
     mapping_set = _mapping_set(
         Mapping(

@@ -1,0 +1,24 @@
+{
+  "@context": "http://www.w3.org/ns/csvw",
+  "url": "contributors.csv",
+  "dc:title": "sssom-rosetta contributors",
+  "dc:description": "Lookup table of ORCID identifiers for contributors referenced by author_id/reviewer_id/creator_id columns in mapping set CSVs under mappings/. Convenience only: mapping CSVs embed the ORCID CURIE directly and don't join against this file at build time.",
+  "tableSchema": {
+    "columns": [
+      {
+        "name": "author_id",
+        "titles": "author_id",
+        "datatype": "string",
+        "valueUrl": "{+author_id}",
+        "propertyUrl": "https://w3id.org/sssom/author_id"
+      },
+      {
+        "name": "author_label",
+        "titles": "author_label",
+        "datatype": "string",
+        "propertyUrl": "https://w3id.org/sssom/author_label"
+      }
+    ],
+    "primaryKey": ["author_id"]
+  }
+}

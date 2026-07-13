@@ -80,7 +80,7 @@ onz-g:Client a owl:Class ;
 
 def _write_csvw_pair(tmp_path: Path, csv_content: str) -> tuple[Path, Path]:
     csv_path = tmp_path / "omop-onz-g.csv"
-    metadata_path = tmp_path / "omop-onz-g-metadata.json"
+    metadata_path = tmp_path / "omop-onz-g.metadata.json"
     csv_path.write_text(csv_content)
     metadata_path.write_text(json.dumps(METADATA_CONTENT))
     return csv_path, metadata_path

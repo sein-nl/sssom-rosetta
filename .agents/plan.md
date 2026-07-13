@@ -63,7 +63,7 @@ pair, `mapping diff` CLI polish.
    (referential integrity). Depends on: mapping-author.
 
 9. **mapping-io** — Implement `mapping/io.py`: read/parse authored CSV +
-   paired CSVW metadata (`mappings/*.csv` + `mappings/*-metadata.json`) via
+   paired CSVW metadata (`mappings/*.csv` + `mappings/*.metadata.json`) via
    the `csvw` library into a generated Pydantic `MappingSet`, and write the
    two derived artifacts from it — canonical SSSOM/TSV (via `sssom-py`, with
    YAML metadata header) and an RDF/Turtle graph of the same mappings
@@ -72,7 +72,7 @@ pair, `mapping diff` CLI polish.
    reverse. Depends on: mapping-author.
 
 10. **first-mapping-set** — Author the first curated mapping set as
-    `mappings/omop-onz-g.csv` + `mappings/omop-onz-g-metadata.json` (CSVW
+    `mappings/omop-onz-g.csv` + `mappings/omop-onz-g.metadata.json` (CSVW
     metadata: column datatypes, `valueUrl` URI templates for `subject_id`/
     `object_id`/`predicate_id`), including the example
     `omop:Person skos:exactMatch onz-g:Client`, using the author/validate
@@ -147,7 +147,7 @@ tests-and-gate (spans all of the above)
   never hit the network.
 - CLI console script is `rosetta`; Python package/import path is
   `sssom_rosetta`.
-- CSV+CSVW pair (`mappings/*.csv` + `mappings/*-metadata.json`) is the only
+- CSV+CSVW pair (`mappings/*.csv` + `mappings/*.metadata.json`) is the only
   hand-authored, PR-reviewed mapping source (https://csvw.org); `.sssom.tsv`
   and `.ttl` under `build/mappings/` are generated, gitignored, and never
   edited directly.
