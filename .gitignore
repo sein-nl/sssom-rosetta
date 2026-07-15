@@ -14,3 +14,4 @@ wheels/
 # cached ontology downloads and built docs site
 /data/ontologies/
 /site/
+.DS_Store

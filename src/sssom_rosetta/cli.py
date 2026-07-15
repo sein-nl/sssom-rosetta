@@ -23,9 +23,11 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from rdflib import Graph
 
 from sssom_rosetta.mapping.docs_pages import generate_mapping_pages
 from sssom_rosetta.mapping.io import read_mapping_set_csvw, write_sssom_tsv, write_ttl
+from sssom_rosetta.mapping.protege import write_owl_restrictions
 from sssom_rosetta.mapping.report import (
     diff_mapping_sets,
     load_mapping_set_tsv,
@@ -55,9 +57,13 @@ app = typer.Typer(
 ontology_app = typer.Typer(help="Fetch and cache ontology sources.")
 mapping_app = typer.Typer(help="Author, validate, and build SSSOM mapping sets.")
 docs_app = typer.Typer(help="Generate the Zensical docs site's generated pages.")
+protege_app = typer.Typer(
+    help="Build a combined ontologies + mappings OWL file for exploring in Protege."
+)
 app.add_typer(ontology_app, name="ontology")
 app.add_typer(mapping_app, name="mapping")
 app.add_typer(docs_app, name="docs")
+app.add_typer(protege_app, name="protege")
 
 # The two ontology sources every mapping set is validated against. The CLI
 # currently only supports the first ontology pair described in AGENTS.md
@@ -379,6 +385,88 @@ def docs_generate_mapping_pages(
 
     for page_path in written:
         typer.echo(str(page_path))
+
+
+@protege_app.command("build")
+def protege_build(
+    csv_path: Annotated[Path, typer.Argument(help="Authored mapping CSV.")],
+    metadata_path: Annotated[Path, typer.Argument(help="Paired CSVW metadata JSON.")],
+    mapping_set_id: Annotated[
+        str, typer.Option(help="MappingSet.mapping_set_id (not row data).")
+    ],
+    license: Annotated[  # noqa: A002 - matches the SSSOM field name
+        str, typer.Option(help="MappingSet.license (not row data).")
+    ],
+    curie_map: Annotated[
+        str,
+        typer.Option(
+            "--curie-map",
+            help=(
+                "MappingSet.curie_map as a JSON object string. See "
+                "'rosetta mapping validate --help' for details."
+            ),
+        ),
+    ],
+    output_path: Annotated[
+        Path,
+        typer.Option(help="Combined OWL/Turtle file path written for Protege to open."),
+    ] = Path("build/protege/omop-onz-g.combined.ttl"),
+    subject_source: Annotated[
+        str,
+        typer.Option(help="Ontology source name subject_id CURIEs resolve against."),
+    ] = _DEFAULT_SUBJECT_SOURCE,
+    object_source: Annotated[
+        str,
+        typer.Option(help="Ontology source name object_id CURIEs resolve against."),
+    ] = _DEFAULT_OBJECT_SOURCE,
+    cache_dir: Annotated[
+        Path,
+        typer.Option(help="Base directory ontologies are cached under."),
+    ] = DEFAULT_CACHE_DIR,
+) -> None:
+    """Merge both source ontologies with the mapping set into one Protege-ready OWL file.
+
+    Unlike ``mapping build``'s ``.ttl`` output (one flat triple per mapping,
+    correct SSSOM/RDF), mappings here are emitted as OWL class-level axioms
+    (``owl:equivalentClass`` for ``skos:exactMatch``, existential
+    restrictions for every other predicate) via
+    ``mapping.protege.write_owl_restrictions``, so OntoGraf in Protege can
+    render them as edges between the OMOP CDM and ONZ-G class nodes. See
+    ``README.md``'s "Exploring the combined graph in Protege" section.
+    """
+    mapping_set, curie_map_dict = _read_and_validate_csvw(
+        csv_path,
+        metadata_path,
+        mapping_set_id=mapping_set_id,
+        license=license,
+        curie_map=curie_map,
+        subject_source=subject_source,
+        object_source=object_source,
+        cache_dir=cache_dir,
+    )
+
+    subject_ontology = get_source(subject_source)
+    object_ontology = get_source(object_source)
+    subject_graph = load_ontology(subject_ontology, cache_dir)
+    object_graph = load_ontology(object_ontology, cache_dir)
+
+    combined = Graph()
+    for prefix, namespace in curie_map_dict.items():
+        combined.bind(prefix, namespace)
+    for graph in (subject_graph, object_graph):
+        for triple in graph:
+            combined.add(triple)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    write_owl_restrictions(mapping_set, output_path, prefix_map=curie_map_dict)
+
+    mapping_graph = Graph()
+    mapping_graph.parse(str(output_path), format="turtle")
+    for triple in mapping_graph:
+        combined.add(triple)
+
+    combined.serialize(destination=str(output_path), format="turtle")
+    typer.echo(str(output_path))
 
 
 __all__ = ["app", "ONTOLOGY_SOURCES"]

@@ -438,3 +438,67 @@ def test_mapping_report_writes_markdown_and_html_files(
     assert markdown_path.exists()
     assert html_path.exists()
     assert "<html" in html_path.read_text().lower()
+
+
+# --- protege build ----------------------------------------------------------
+
+
+def test_protege_build_writes_combined_ttl(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _patch_load_ontology(monkeypatch)
+    csv_path, metadata_path = _write_csvw_pair(tmp_path, CSV_CONTENT)
+    output_path = tmp_path / "build" / "protege" / "omop-onz-g.combined.ttl"
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "protege",
+            "build",
+            str(csv_path),
+            str(metadata_path),
+            "--mapping-set-id",
+            MAPPING_SET_ID,
+            "--license",
+            LICENSE,
+            "--curie-map",
+            json.dumps(PREFIX_MAP),
+            "--output-path",
+            str(output_path),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert output_path.exists()
+    assert str(output_path) in result.output
+
+    combined = Graph()
+    combined.parse(output_path, format="turtle")
+    assert len(combined) > 0
+
+
+def test_protege_build_fails_before_writing_when_invalid(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _patch_load_ontology(monkeypatch)
+    csv_path, metadata_path = _write_csvw_pair(tmp_path, CSV_CONTENT_BAD)
+    output_path = tmp_path / "build" / "protege" / "omop-onz-g.combined.ttl"
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "protege",
+            "build",
+            str(csv_path),
+            str(metadata_path),
+            "--mapping-set-id",
+            MAPPING_SET_ID,
+            "--license",
+            LICENSE,
+            "--curie-map",
+            json.dumps(PREFIX_MAP),
+            "--output-path",
+            str(output_path),
+        ],
+    )
+    assert result.exit_code != 0
+    assert not output_path.exists()

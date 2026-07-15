@@ -79,9 +79,7 @@ def test_load_mapping_set_tsv_round_trips_multivalued_author_id(
     tmp_path: Path,
 ) -> None:
     mapping_set = _mapping_set(
-        _mapping(
-            author_id=["orcid:0000-0000-0000-0001", "orcid:0000-0000-0000-0002"]
-        )
+        _mapping(author_id=["orcid:0000-0000-0000-0001", "orcid:0000-0000-0000-0002"])
     )
     tsv_path = tmp_path / "multi-author.sssom.tsv"
     write_sssom_tsv(mapping_set, tsv_path)
