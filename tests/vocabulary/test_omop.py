@@ -37,6 +37,16 @@ def test_source_concept_iri_returns_none_for_rxnorm_extension() -> None:
     assert source_concept_iri("SNOMED", "44054006") == sct_iri("44054006")
 
 
+def test_source_concept_iri_percent_encodes_illegal_chars() -> None:
+    # LOINC class codes can contain spaces/ampersands that are illegal in an
+    # IRI path; they must be percent-encoded so rdflib can serialize them.
+    iri = source_concept_iri("LOINC", "H&P.SURG PROC")
+    assert iri is not None
+    assert str(iri) == "https://loinc.org/H%26P.SURG%20PROC"
+    # Plain codes with unreserved chars are left intact.
+    assert str(source_concept_iri("LOINC", "2345-7")) == "https://loinc.org/2345-7"
+
+
 def test_build_graph_concept_nodes_and_crosslinks() -> None:
     graph = omop.build_graph(CONCEPTS, RELATIONSHIPS)
 

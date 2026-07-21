@@ -16,3 +16,4 @@ wheels/
 /data/vocabularies/
 /site/
 .DS_Store
+data/downloads/

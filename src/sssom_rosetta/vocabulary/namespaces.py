@@ -15,6 +15,8 @@ IRI schemes (see the plan's namespace-decisions table):
 
 from __future__ import annotations
 
+from urllib.parse import quote
+
 from rdflib import Namespace, URIRef
 
 SCT = Namespace("http://snomed.info/id/")
@@ -71,4 +73,7 @@ def source_concept_iri(vocabulary_id: str, concept_code: str) -> URIRef | None:
     namespace = _VOCABULARY_NAMESPACES.get(vocabulary_id)
     if namespace is None:
         return None
-    return namespace[concept_code]
+    # Concept codes can contain characters that are illegal in an IRI path
+    # (e.g. LOINC class codes like "H&P.SURG PROC" or "NR STATS" with spaces
+    # and ampersands). Percent-encode them so rdflib can serialize the IRI.
+    return URIRef(str(namespace) + quote(concept_code, safe=""))
