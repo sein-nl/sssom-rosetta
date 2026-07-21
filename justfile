@@ -62,22 +62,22 @@ report:
 docs-pages:
     uv run rosetta docs generate-mapping-pages
 
-# --- Vocabulary integration (LOINC-SNOMED RF2 + OMOP/Athena) ---
+# --- Vocabulary integration (OMOP/Athena base; optional native SNOMED/LOINC RF2) ---
 # These releases are licence-gated, so the curator downloads the ZIPs manually
 # and ingests them; there is no open download URL to fetch from. For that
 # reason the vocab-* recipes are intentionally NOT part of `build-all`.
+#
+# Scope: OMOP is the base layer — it already includes SNOMED CT International and
+# LOINC, harmonised with a pre-computed hierarchy. The default `vocab-build`
+# therefore builds and merges OMOP only. The native LOINC-SNOMED and SNOMED CT
+# International RF2 builders are retained as opt-in recipes for the deferred
+# OWL-DL / native-SNOMED follow-up (relationship groups, post-coordination,
+# refsets); they are NOT part of the default merged graph. See README.md and
+# .agents/plan/2026-07-21-owl-dl-classification-deferral-note.md.
 
-# Ingest a locally-downloaded release ZIP (e.g. `just vocab-ingest loinc-snomed path/to.zip`).
+# Ingest a locally-downloaded release ZIP (e.g. `just vocab-ingest omop path/to.zip`).
 vocab-ingest name zip:
     uv run rosetta vocabulary ingest {{ name }} {{ zip }}
-
-# Build loinc-snomed.ttl from the ingested LOINC-SNOMED RF2 release.
-vocab-build-loinc-snomed:
-    uv run rosetta vocabulary build-loinc-snomed
-
-# Build snomed-international.ttl from the ingested SNOMED CT International release.
-vocab-build-snomed-international:
-    uv run rosetta vocabulary build-snomed-international
 
 # Build omop.ttl from the ingested OMOP/Athena vocabulary bundle.
 vocab-build-omop:
@@ -87,8 +87,18 @@ vocab-build-omop:
 vocab-merge:
     uv run rosetta vocabulary merge
 
-# Build all vocabulary graphs and the merged rosetta-vocabularies.ttl.
-vocab-build: vocab-build-loinc-snomed vocab-build-snomed-international vocab-build-omop vocab-merge
+# Build the default vocabulary graph (OMOP base) and the merged output.
+vocab-build: vocab-build-omop vocab-merge
+
+# --- Optional: native SNOMED/LOINC RF2 (deferred OWL-DL follow-up, not in vocab-build) ---
+
+# Build loinc-snomed.ttl from the ingested LOINC-SNOMED RF2 release.
+vocab-build-loinc-snomed:
+    uv run rosetta vocabulary build-loinc-snomed
+
+# Build snomed-international.ttl from the ingested SNOMED CT International release.
+vocab-build-snomed-international:
+    uv run rosetta vocabulary build-snomed-international
 
 # Build the Zensical documentation site into site/.
 docs-build: docs-pages

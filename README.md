@@ -165,62 +165,177 @@ A GitHub Actions workflow triggers on PRs that change `mappings/**` (CSV + CSVW 
 
 On merge to the default branch, a separate CI job re-runs `rosetta mapping build` to regenerate `build/mappings/*.{sssom.tsv,ttl}`, regenerates `docs/mappings/*.md` from those files, runs `zensical build`, and publishes `site/` to GitHub Pages.
 
-## Integrating large terminologies (LOINC-SNOMED + OMOP) into one TTL
+## Integrating vocabularies & ontologies into one graph
 
-Alongside the curated SSSOM mapping sets, the `rosetta vocabulary` sub-app builds a single merged RDF/Turtle graph that integrates large reference terminologies: the **LOINC-SNOMED Ontology** and the **OHDSI/OMOP Standardized Vocabularies**, so that OMOP `concept_id`s are cross-linked with SNOMED, LOINC, RxNorm and ICD10/ICD10CM concepts. This is a *vocabulary graph* built from the terminology releases directly, distinct from the hand-authored SSSOM mappings under `mappings/`. RF2/CSV tables are parsed with **polars** and the graph is built with **rdflib**.
+Alongside the curated SSSOM mapping sets, the `rosetta vocabulary` sub-app builds
+a single merged RDF/Turtle graph that integrates the reference terminologies and
+domain ontologies this project maps between. RF2/CSV tables are parsed with
+**polars** and the graph is built with **rdflib**. This is a *vocabulary graph*
+built from the terminology releases directly, distinct from the hand-authored
+SSSOM mappings under `mappings/`.
 
-Output artifacts (all under `build/vocabularies/`, gitignored, regenerated on demand):
+### Scope & architecture: OMOP as the base, plus Dutch domain ontologies
 
-- `loinc-snomed.ttl` — SKOS/RDFS graph from the LOINC-SNOMED RF2 release.
-- `omop.ttl` — OMOP concept graph, each `concept_id` a hub node cross-linked to its native source-vocabulary concept.
-- `rosetta-vocabularies.ttl` — the merged graph; shared `sct:`/`loinc:` IRIs connect OMOP `concept_id`s to the LOINC-SNOMED hierarchy.
+**We start from the OHDSI/OMOP Standardized Vocabularies as the base layer.**
+OMOP has already done the cross-vocabulary harmonisation we need: it ingests and
+unifies SNOMED CT (International), LOINC, RxNorm, ICD-10/ICD-10-CM and others into
+one concept space with pre-computed hierarchy (`Is a` / `Subsumes`) and a
+transitive-closure `CONCEPT_ANCESTOR` table. For our purpose — cross-vocabulary
+mapping and hierarchical rollups — that is sufficient, and it means:
+
+- **We do *not* separately ingest SNOMED CT International.** It is already
+  included, mapped and hierarchically connected inside OMOP.
+- **We do *not* separately ingest the LOINC (or LOINC-SNOMED) Ontology.** LOINC
+  is likewise already included in OMOP.
+
+This is a deliberate consequence of having **deferred full OWL-DL reasoning**
+(see `.agents/plan/2026-07-21-owl-dl-classification-deferral-note.md`). OMOP is a
+faithful base *when you do not need*:
+
+- **Description-Logic reasoning / classification** — OMOP flattens SNOMED and
+  drops the OWL axioms, so an ELK/HermiT reasoner cannot re-classify concepts
+  from it.
+- **SNOMED relationship grouping** — OMOP strips role groups, so it can't tell
+  you that *finding-site 1 + method 1* belong together as one group distinct from
+  *site 2 + method 2*.
+- **Post-coordination / dynamic SNOMED expressions** — OMOP only carries
+  pre-coordinated, static `concept_id`s.
+- **Native SNOMED refsets/subsets** (GP subsets, language refsets, national
+  extensions) that OHDSI does not distribute via ATHENA.
+
+We need none of these for cross-vocabulary mapping and cohort-style hierarchical
+queries, so **native SNOMED CT / LOINC ingestion stays out of scope** until a
+consumer requires OWL reasoning, relationship groups, post-coordination, or
+native refsets — at which point the deferred OWL-DL follow-up is revisited.
+
+**On top of the OMOP base we add vocabularies and ontologies specific to the
+Dutch healthcare domain**, which OMOP does *not* contain:
+
+| Vocabulary / ontology | Status | Notes |
+|-----------------------|--------|-------|
+| **KIK-V ONZ-G** | **available** | Een Ontologie voor de Nederlandse Zorg — Generiek (`onz-g`), the first ontology mapped in this repo. |
+| **Z-Index (G-Standaard)** | *to be added* | Dutch drug/product database. |
+| **DHD Diagnosethesaurus** | *to be added* | Dutch Hospital Data diagnosis thesaurus. |
+| **DHD Verrichtingenthesaurus** | *to be added* | Dutch Hospital Data procedures thesaurus. |
+
+The end state is one graph in which OMOP `concept_id`s (cross-linked to SNOMED,
+LOINC, RxNorm, ICD-10/CM) are joined to the Dutch domain ontologies via the
+curated SSSOM mappings — OMOP providing the international backbone, the Dutch
+ontologies providing the local domain coverage OMOP lacks.
+
+Output artifacts (all under `build/vocabularies/`, gitignored, regenerated on
+demand):
+
+- `omop.ttl` — OMOP concept graph, each `concept_id` a hub node cross-linked to
+  its native source-vocabulary concept (SNOMED, LOINC, RxNorm, ICD-10/CM).
+- `rosetta-vocabularies.ttl` — the merged graph.
 
 ### What you need to download first
 
-Both releases are **licence-gated**, so there is no open download URL to fetch automatically. You must download the release archives manually (accepting the relevant licences) and then *ingest* them locally:
+The OMOP bundle is **licence-gated**, so there is no open download URL to fetch
+automatically. You must download the release archive manually (accepting the
+relevant licences) and then *ingest* it locally:
 
-1. **LOINC-SNOMED Ontology** (registry key `loinc-snomed`, currently pinned to v2.82).
-   - Download the RF2 package ZIP from <https://loincsnomed.org/downloads> (e.g. `SnomedCT_LOINC_Extension_...zip`).
-   - Requires a **SNOMED International affiliate licence** *and* acceptance of the **LOINC licence** — it is distributed as a SNOMED CT extension (module `11010000107 |LOINC Extension module|`) in standard RF2 format.
-2. **OHDSI/OMOP Standardized Vocabularies** (registry key `omop`).
-   - Download a vocabulary bundle ZIP from <https://athena.ohdsi.org/> (Athena account required). When selecting vocabularies, tick at least: **SNOMED, LOINC, RxNorm, RxNorm Extension, ICD10, ICD10CM**. (Do *not* select CPT4 unless you have a UMLS licence and are prepared to run its `cpt4.jar` reconstitution step; it is not needed here.)
-   - The bundle is a ZIP of tab-delimited files with a `.csv` extension (`CONCEPT.csv`, `CONCEPT_RELATIONSHIP.csv`, ...).
+- **OHDSI/OMOP Standardized Vocabularies** (registry key `omop`).
+  - Download a vocabulary bundle ZIP from <https://athena.ohdsi.org/> (Athena
+    account required). When selecting vocabularies, tick at least: **SNOMED,
+    LOINC, RxNorm, RxNorm Extension, ICD10, ICD10CM**. (Do *not* select CPT4
+    unless you have a UMLS licence and are prepared to run its `cpt4.jar`
+    reconstitution step; it is not needed here.)
+  - The bundle is a ZIP of tab-delimited files with a `.csv` extension
+    (`CONCEPT.csv`, `CONCEPT_RELATIONSHIP.csv`, ...).
+
+> **Note.** The `rosetta vocabulary` sub-app also retains a `loinc-snomed` /
+> `snomed-international` RF2 ingest path (SNOMED CT extension + International
+> Edition, both licence-gated). These are **not part of the default merged
+> graph** described above — OMOP already includes that content — and are kept
+> only for the future OWL-DL / native-SNOMED follow-up. Use them only if you
+> explicitly need native RF2 content OMOP does not carry.
 
 ### How to start the ingest
 
-Ingesting verifies the ZIP's SHA-256 checksum (when one is pinned in `vocabulary/sources.py`) and extracts it under `data/vocabularies/<name>/<version>/` (gitignored). It's idempotent — an already-extracted release is reused unless you pass `--force`.
+Ingesting verifies the ZIP's SHA-256 checksum (when one is pinned in
+`vocabulary/sources.py`) and extracts it under `data/vocabularies/<name>/<version>/`
+(gitignored). It's idempotent — an already-extracted release is reused unless you
+pass `--force`.
 
 ```
-# Ingest each downloaded ZIP (paths are wherever you saved them):
-uv run rosetta vocabulary ingest loinc-snomed ~/Downloads/SnomedCT_LOINC_Extension_PRODUCTION_2.82.zip
+# Ingest the downloaded OMOP bundle (path is wherever you saved it):
 uv run rosetta vocabulary ingest omop ~/Downloads/athena_vocabularies.zip
 
 # or via just:
-just vocab-ingest loinc-snomed ~/Downloads/SnomedCT_LOINC_Extension_PRODUCTION_2.82.zip
 just vocab-ingest omop ~/Downloads/athena_vocabularies.zip
 ```
 
 ### Build and merge
 
-Once both releases are ingested, build the graphs and merge them:
+Once the OMOP bundle is ingested, build the graph:
 
 ```
-uv run rosetta vocabulary build-loinc-snomed   # -> build/vocabularies/loinc-snomed.ttl
-uv run rosetta vocabulary build-omop           # -> build/vocabularies/omop.ttl
-uv run rosetta vocabulary merge                # -> build/vocabularies/rosetta-vocabularies.ttl
+uv run rosetta vocabulary build-omop   # -> build/vocabularies/omop.ttl
+uv run rosetta vocabulary merge        # -> build/vocabularies/rosetta-vocabularies.ttl
 
 # or the whole chain in one step:
 just vocab-build
 ```
 
-The `vocab-*` recipes are intentionally **not** part of `just build-all`, since they depend on manually-downloaded, licence-gated ZIPs being ingested first.
+The `vocab-*` recipes are intentionally **not** part of `just build-all`, since
+they depend on a manually-downloaded, licence-gated ZIP being ingested first.
 
 ### How the graph is shaped
 
 - SNOMED/LOINC-extension concepts use IRIs `http://snomed.info/id/{sctid}` (`sct:` prefix); OMOP concepts use `https://w3id.org/omop/concept/{concept_id}` (`omopconcept:` prefix); source codes use `loinc:`, `rxnorm:`, `icd10:`, `icd10cm:` namespaces.
 - Each OMOP concept carries `skos:prefLabel` (concept name), `skos:notation` (source code), and a `skos:exactMatch` to its native source IRI (e.g. an OMOP SNOMED concept → `sct:<sctid>`). Concepts with no native code (e.g. `RxNorm Extension`) stay OMOP-minted.
-- Relationships map to SKOS: OMOP `Maps to` → `skos:exactMatch`, `Is a` / RF2 `Is a` → `skos:broadMatch` (child → parent), OMOP `Subsumes` → `skos:narrowMatch`; SNOMED synonyms → `skos:altLabel`. `broadMatch` direction follows the project convention (subject is the more specific concept).
-- The graph is a lightweight SKOS/RDFS representation. Materialising the full OWL-DL logical definitions from the RF2 OWL Expression refset (via `snomed-owl-toolkit` + ELK) is a deliberately deferred follow-up — see `.agents/plan/2026-07-21-owl-dl-classification-deferral-note.md`.
+- Relationships map to SKOS: OMOP `Maps to` → `skos:exactMatch`, `Is a` → `skos:broadMatch` (child → parent), OMOP `Subsumes` → `skos:narrowMatch`. `broadMatch` direction follows the project convention (subject is the more specific concept).
+- The graph is a lightweight SKOS/RDFS representation. Materialising the full OWL-DL logical definitions (via native SNOMED RF2 + `snomed-owl-toolkit` + ELK) is a deliberately deferred follow-up — see `.agents/plan/2026-07-21-owl-dl-classification-deferral-note.md`.
+
+> [!IMPORTANT]
+> **OMOP relationship → SKOS mapping, and why transitivity matters**
+>
+> The `rosetta vocabulary` graph maps OMOP `CONCEPT_RELATIONSHIP` rows onto SKOS
+> mapping properties:
+>
+> | OMOP `relationship_id` | SKOS predicate | Direction | Transitive? |
+> |------------------------|----------------|-----------|-------------|
+> | `Maps to` | `skos:exactMatch` | symmetric | **yes** |
+> | `Is a` | `skos:broadMatch` | subject = more specific (child → parent) | **no** |
+> | `Subsumes` | `skos:narrowMatch` | subject = more generic (parent → child) | **no** |
+>
+> **Transitive vs. non-transitive SKOS properties.** SKOS distinguishes two
+> families of linking properties:
+>
+> - **Within a single vocabulary**, the hierarchical properties `skos:broader` /
+>   `skos:narrower` have explicit transitive super-properties
+>   `skos:broaderTransitive` / `skos:narrowerTransitive`. A chain of `broader`
+>   links can therefore be safely followed to infer indirect ancestry, and
+>   `skos:exactMatch` is defined as **transitive** (and symmetric): if
+>   `A exactMatch B` and `B exactMatch C`, then `A exactMatch C`.
+> - **Across vocabularies**, the mapping properties `skos:closeMatch`,
+>   `skos:broadMatch` and `skos:narrowMatch` are **not** transitive. Crucially,
+>   the W3C Semantic Web Deployment Working Group **deliberately omitted** any
+>   `skos:broadMatchTransitive` / `skos:narrowMatchTransitive` equivalents from
+>   the [W3C SKOS Reference](https://www.w3.org/TR/skos-reference/) — precisely
+>   to **discourage unsafe automated reasoning across different vocabularies**,
+>   where chaining cross-walk links tends to accumulate meaning drift and produce
+>   false equivalences.
+>
+> **`exactMatch` (transitive) vs. `closeMatch` (not transitive) when authoring
+> mappings.** This distinction is the single most important choice when creating
+> a mapping:
+>
+> - Use **`skos:exactMatch`** only when two concepts can be used
+>   interchangeably across a wide range of information-retrieval applications.
+>   Because it is transitive, an `exactMatch` you assert can be **chained** with
+>   others by downstream tooling — so an incorrect `exactMatch` propagates.
+> - Use **`skos:closeMatch`** when two concepts are *sufficiently similar* to be
+>   linked but are **not** guaranteed interchangeable. It is intentionally **not**
+>   transitive, so it will **not** be chained, containing the link to exactly the
+>   two concepts you asserted.
+>
+> When in doubt, prefer `closeMatch` (or the directional `broadMatch` /
+> `narrowMatch`) over `exactMatch`: it is always safe to weaken an equivalence
+> claim, but an over-stated transitive `exactMatch` can silently corrupt
+> inferred equivalences several hops away.
 
 See `docs/vocabularies/index.md` for the full provenance, IRI, and relationship reference.
 

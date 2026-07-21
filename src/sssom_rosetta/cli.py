@@ -613,24 +613,24 @@ def vocabulary_merge(
 ) -> None:
     """Merge the vocabulary graphs into ``rosetta-vocabularies.ttl``.
 
-    Combines whichever of ``loinc-snomed.ttl``, ``snomed-international.ttl`` and
-    ``omop.ttl`` are present. Because all mint identical ``sct:`` IRIs, the
-    LOINC-SNOMED extension concepts attach to the International hierarchy (and
-    OMOP concept_ids to both) automatically once unioned. At least two inputs
-    are required for a merge to be meaningful.
+    Combines whichever of ``omop.ttl``, ``snomed-international.ttl`` and
+    ``loinc-snomed.ttl`` are present. OMOP is the base layer and is normally the
+    only input; the native SNOMED/LOINC RF2 graphs are optional (deferred
+    OWL-DL follow-up). Because all mint identical ``sct:`` IRIs, when the
+    optional graphs are present the OMOP concept_ids and any native concepts
+    attach to each other automatically once unioned.
     """
     candidates = [
-        output_dir / "loinc-snomed.ttl",
-        output_dir / "snomed-international.ttl",
         output_dir / "omop.ttl",
+        output_dir / "snomed-international.ttl",
+        output_dir / "loinc-snomed.ttl",
     ]
     inputs = [path for path in candidates if path.exists()]
-    if len(inputs) < 2:
-        present = ", ".join(str(path) for path in inputs) or "none"
+    if not inputs:
         typer.echo(
-            "Error: need at least two input graphs to merge (found: "
-            f"{present}). Run 'build-loinc-snomed', "
-            "'build-snomed-international' and/or 'build-omop' first.",
+            "Error: no input graphs found to merge. Run 'build-omop' "
+            "(and optionally 'build-snomed-international' / "
+            "'build-loinc-snomed') first.",
             err=True,
         )
         raise typer.Exit(1)
